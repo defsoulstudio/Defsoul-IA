@@ -12,7 +12,7 @@ import {
   Vignette,
 } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 
 function Core() {
@@ -43,7 +43,7 @@ function Core() {
       floatIntensity={1.8}
     >
       <mesh ref={meshRef}>
-        <icosahedronGeometry args={[1.2, 12]} />
+        <icosahedronGeometry args={[1.2, 8]} />
 
         <MeshDistortMaterial
           color="#c4b5fd"
@@ -51,8 +51,8 @@ function Core() {
           emissiveIntensity={0.35}
           roughness={0.12}
           metalness={0.42}
-          distort={0.45}
-          speed={2.2}
+          distort={0.42}
+          speed={2}
           transparent
           opacity={0.5}
         />
@@ -62,9 +62,30 @@ function Core() {
 }
 
 export function Scene() {
+  const [isMobile, setIsMobile] = useState(true)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    checkMobile()
+
+    window.addEventListener('resize', checkMobile)
+
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+    }
+  }, [])
+
+  if (isMobile) {
+    return null
+  }
+
   return (
     <div className="pointer-events-none fixed inset-0 z-[1] opacity-65">
       <Canvas
+        dpr={[1, 1.5]}
         camera={{
           position: [0, 0, 5],
           fov: 45,
