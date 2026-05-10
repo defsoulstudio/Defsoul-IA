@@ -166,43 +166,35 @@ export function Cursor() {
   const auraY = useSpring(mouseY, { stiffness: 55, damping: 18, mass: 1 })
  
   useEffect(() => {
-    const move = (e: MouseEvent) => {
-      mouseX.set(e.clientX)
-      mouseY.set(e.clientY)
-    }
     const down = () => setClicked(true)
     const up = () => setClicked(false)
+ 
     const INTERACTIVE = 'a, button, [role="button"], input, textarea, select, label'
+    let currentlyHovered = false
  
-    const onEnter = (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest(INTERACTIVE)) {
-        setHovered(true)
+    // Checa diretamente o elemento sob o cursor a cada mousemove
+    // Mais confiável que mouseover/mouseout com elementos aninhados e 3D transforms
+    const checkHover = (e: MouseEvent) => {
+      mouseX.set(e.clientX)
+      mouseY.set(e.clientY)
+ 
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+      const isOver = !!el?.closest(INTERACTIVE)
+ 
+      if (isOver !== currentlyHovered) {
+        currentlyHovered = isOver
+        setHovered(isOver)
       }
     }
-    const onLeave = (e: MouseEvent) => {
-      const related = e.relatedTarget as HTMLElement | null
-      // Só desativa se o mouse saiu do elemento interativo completamente
-      // (não apenas moveu para um filho interno)
-      if (
-        (e.target as HTMLElement).closest(INTERACTIVE) &&
-        !related?.closest(INTERACTIVE)
-      ) {
-        setHovered(false)
-      }
-    }
  
-    window.addEventListener('mousemove', move)
+    window.addEventListener('mousemove', checkHover)
     window.addEventListener('mousedown', down)
     window.addEventListener('mouseup', up)
-    window.addEventListener('mouseover', onEnter)
-    window.addEventListener('mouseout', onLeave)
  
     return () => {
-      window.removeEventListener('mousemove', move)
+      window.removeEventListener('mousemove', checkHover)
       window.removeEventListener('mousedown', down)
       window.removeEventListener('mouseup', up)
-      window.removeEventListener('mouseover', onEnter)
-      window.removeEventListener('mouseout', onLeave)
     }
   }, [mouseX, mouseY])
  
