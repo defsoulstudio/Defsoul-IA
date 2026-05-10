@@ -172,13 +172,21 @@ export function Cursor() {
     }
     const down = () => setClicked(true)
     const up = () => setClicked(false)
+    const INTERACTIVE = 'a, button, [role="button"], input, textarea, select, label'
+ 
     const onEnter = (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest('a, button, [role="button"], input, textarea, select, label')) {
+      if ((e.target as HTMLElement).closest(INTERACTIVE)) {
         setHovered(true)
       }
     }
     const onLeave = (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest('a, button, [role="button"], input, textarea, select, label')) {
+      const related = e.relatedTarget as HTMLElement | null
+      // Só desativa se o mouse saiu do elemento interativo completamente
+      // (não apenas moveu para um filho interno)
+      if (
+        (e.target as HTMLElement).closest(INTERACTIVE) &&
+        !related?.closest(INTERACTIVE)
+      ) {
         setHovered(false)
       }
     }
