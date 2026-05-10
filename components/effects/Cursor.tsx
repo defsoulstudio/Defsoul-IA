@@ -3,13 +3,39 @@
 import { motion, useMotionValue, useSpring } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
  
-// ── Rastro contínuo tipo cauda de cometa via canvas ───────────────────────────
+// ── Mapeia scroll Y para cor RGB da cauda ─────────────────────────────────────
+function getTrailColor(scrollY: number, maxScroll: number): [number, number, number] {
+  const t = Math.min(scrollY / Math.max(maxScroll, 1), 1)
  
-function CometTrail() {
+  // Topo: branco frio (255,255,255)
+  // Meio: azul violeta suave (180,160,255)
+  // Base: violeta quente (160,100,240)
+  if (t < 0.5) {
+    const s = t / 0.5
+    return [
+      Math.round(255 - s * 75),   // 255 → 180
+      Math.round(255 - s * 95),   // 255 → 160
+      Math.round(255),             // 255 → 255
+    ]
+  } else {
+    const s = (t - 0.5) / 0.5
+    return [
+      Math.round(180 - s * 20),   // 180 → 160
+      Math.round(160 - s * 60),   // 160 → 100
+      Math.round(255 - s * 15),   // 255 → 240
+    ]
+  }
+}
+ 
+// ── Cauda de cometa ───────────────────────────────────────────────────────────
+function CometTrail({ springX, springY }: {
+  springX: { get: () => number }
+  springY: { get: () => number }
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const trail = useRef<{ x: number; y: number }[]>([])
-  const mouse = useRef({ x: -200, y: -200 })
   const rafRef = useRef<number>(0)
+  const scrollRef = useRef({ y: 0, max: 1 })
  
   useEffect(() => {
     const canvas = canvasRef.current
@@ -20,21 +46,27 @@ function CometTrail() {
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      scrollRef.current.max = document.body.scrollHeight - window.innerHeight
     }
     resize()
     window.addEventListener('resize', resize)
  
-    const onMove = (e: MouseEvent) => {
-      mouse.current = { x: e.clientX, y: e.clientY }
+    const onScroll = () => {
+      scrollRef.current.y = window.scrollY
+      scrollRef.current.max = document.body.scrollHeight - window.innerHeight
     }
-    window.addEventListener('mousemove', onMove)
+    window.addEventListener('scroll', onScroll, { passive: true })
  
-    const TRAIL_LENGTH = 28
+    const TRAIL_LENGTH = 32
  
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
  
-      trail.current.unshift({ x: mouse.current.x, y: mouse.current.y })
+      // Usa a posição do spring (mesma que o star core) — rastro sincronizado
+      const x = springX.get()
+      const y = springY.get()
+ 
+      trail.current.unshift({ x, y })
       if (trail.current.length > TRAIL_LENGTH) {
         trail.current = trail.current.slice(0, TRAIL_LENGTH)
       }
@@ -45,16 +77,18 @@ function CometTrail() {
         return
       }
  
-      // Desenha cada segmento como trapézio: grossa na cabeça, afina até sumir
+      const [r, g, b] = getTrailColor(scrollRef.current.y, scrollRef.current.max)
+ 
       for (let i = 0; i < pts.length - 1; i++) {
         const t0 = 1 - i / pts.length
         const t1 = 1 - (i + 1) / pts.length
  
-        const w0 = t0 * t0 * 3.5
-        const w1 = t1 * t1 * 3.5
+        // Cauda mais fina — máximo 2px na cabeça
+        const w0 = t0 * t0 * 2.0
+        const w1 = t1 * t1 * 2.0
  
-        const alpha0 = t0 * t0 * 0.9
-        const alpha1 = t1 * t1 * 0.9
+        const alpha0 = t0 * t0 * 0.85
+        const alpha1 = t1 * t1 * 0.85
  
         const dx = pts[i + 1].x - pts[i].x
         const dy = pts[i + 1].y - pts[i].y
@@ -72,8 +106,8 @@ function CometTrail() {
         const y1b = pts[i + 1].y - ny * w1
  
         const grad = ctx.createLinearGradient(pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y)
-        grad.addColorStop(0, `rgba(255, 255, 255, ${alpha0})`)
-        grad.addColorStop(1, `rgba(180, 160, 255, ${alpha1})`)
+        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha0})`)
+        grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, ${alpha1})`)
  
         ctx.beginPath()
         ctx.moveTo(x0a, y0a)
@@ -85,14 +119,13 @@ function CometTrail() {
         ctx.fill()
       }
  
-      // Brilho na cabeça da cauda
+      // Brilho suave na cabeça
       const head = pts[0]
-      const glow = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 7)
-      glow.addColorStop(0, 'rgba(255, 255, 255, 0.55)')
-      glow.addColorStop(0.4, 'rgba(196, 181, 253, 0.2)')
-      glow.addColorStop(1, 'rgba(139, 92, 246, 0)')
+      const glow = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 5)
+      glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.5)`)
+      glow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`)
       ctx.beginPath()
-      ctx.arc(head.x, head.y, 7, 0, Math.PI * 2)
+      ctx.arc(head.x, head.y, 5, 0, Math.PI * 2)
       ctx.fillStyle = glow
       ctx.fill()
  
@@ -103,10 +136,10 @@ function CometTrail() {
  
     return () => {
       cancelAnimationFrame(rafRef.current)
-      window.removeEventListener('mousemove', onMove)
       window.removeEventListener('resize', resize)
+      window.removeEventListener('scroll', onScroll)
     }
-  }, [])
+  }, [springX, springY])
  
   return (
     <canvas
@@ -125,8 +158,9 @@ export function Cursor() {
   const [hovered, setHovered] = useState(false)
   const [clicked, setClicked] = useState(false)
  
-  const coreX = useSpring(mouseX, { stiffness: 300, damping: 30, mass: 0.15 })
-  const coreY = useSpring(mouseY, { stiffness: 300, damping: 30, mass: 0.15 })
+  // Spring único compartilhado com o canvas — rastro e core sempre sincronizados
+  const springX = useSpring(mouseX, { stiffness: 260, damping: 28, mass: 0.2 })
+  const springY = useSpring(mouseY, { stiffness: 260, damping: 28, mass: 0.2 })
  
   const auraX = useSpring(mouseX, { stiffness: 55, damping: 18, mass: 1 })
   const auraY = useSpring(mouseY, { stiffness: 55, damping: 18, mass: 1 })
@@ -166,9 +200,10 @@ export function Cursor() {
  
   return (
     <>
-      <CometTrail />
+      {/* Rastro — recebe o mesmo spring do core */}
+      <CometTrail springX={springX} springY={springY} />
  
-      {/* Aura atmosférica */}
+      {/* Aura atmosférica lenta */}
       <motion.div
         style={{ x: auraX, y: auraY, translateX: '-50%', translateY: '-50%' }}
         animate={{
@@ -182,7 +217,7 @@ export function Cursor() {
  
       {/* Anel de hover */}
       <motion.div
-        style={{ x: coreX, y: coreY, translateX: '-50%', translateY: '-50%' }}
+        style={{ x: springX, y: springY, translateX: '-50%', translateY: '-50%' }}
         animate={{
           width: hovered ? 44 : 0,
           height: hovered ? 44 : 0,
@@ -194,7 +229,7 @@ export function Cursor() {
  
       {/* Star core */}
       <motion.div
-        style={{ x: coreX, y: coreY, translateX: '-50%', translateY: '-50%' }}
+        style={{ x: springX, y: springY, translateX: '-50%', translateY: '-50%' }}
         animate={{
           opacity: hovered ? 0 : 1,
           scale: clicked ? 2.8 : 1,
@@ -208,7 +243,7 @@ export function Cursor() {
       {/* Pulso de clique */}
       {clicked && (
         <motion.div
-          style={{ x: coreX, y: coreY, translateX: '-50%', translateY: '-50%' }}
+          style={{ x: springX, y: springY, translateX: '-50%', translateY: '-50%' }}
           initial={{ opacity: 0.7, scale: 0.4, width: 12, height: 12 }}
           animate={{ opacity: 0, scale: 3.5 }}
           transition={{ duration: 0.55, ease: 'easeOut' }}
