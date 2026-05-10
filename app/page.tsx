@@ -8,7 +8,6 @@ import {
 
 import { Atmosphere } from '@/components/effects/Atmosphere'
 import { Particles } from '@/components/effects/Particles'
-import { Cursor } from '@/components/effects/Cursor'
 import { SmoothScroll } from '@/components/effects/SmoothScroll'
 import { BlackHoleShader } from '@/components/effects/BlackHoleShader'
 import { Scene } from '@/components/webgl/Scene'
@@ -41,7 +40,6 @@ export default function Home() {
       <BlackHoleShader />
       <Scene />
       <Particles />
-      <Cursor />
       <SmoothScroll />
       <Navbar />
 
