@@ -3,7 +3,7 @@
 import { motion, useMotionValue, useSpring } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
  
-// ── Rastro tipo cometa via canvas ─────────────────────────────────────────────
+// ── Rastro contínuo tipo cauda de cometa via canvas ───────────────────────────
  
 function CometTrail() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -29,8 +29,7 @@ function CometTrail() {
     }
     window.addEventListener('mousemove', onMove)
  
-    const TRAIL_LENGTH = 22
-    const POINT_SIZE = 1.6
+    const TRAIL_LENGTH = 28
  
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -40,29 +39,62 @@ function CometTrail() {
         trail.current = trail.current.slice(0, TRAIL_LENGTH)
       }
  
-      trail.current.forEach((point, i) => {
-        const progress = 1 - i / TRAIL_LENGTH
-        const alpha = progress * progress * 0.85
-        const size = POINT_SIZE * progress
+      const pts = trail.current
+      if (pts.length < 2) {
+        rafRef.current = requestAnimationFrame(draw)
+        return
+      }
  
-        const grad = ctx.createRadialGradient(
-          point.x, point.y, 0,
-          point.x, point.y, size * 3
-        )
-        grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`)
-        grad.addColorStop(0.4, `rgba(196, 181, 253, ${alpha * 0.7})`)
-        grad.addColorStop(1, `rgba(139, 92, 246, 0)`)
+      // Desenha cada segmento como trapézio: grossa na cabeça, afina até sumir
+      for (let i = 0; i < pts.length - 1; i++) {
+        const t0 = 1 - i / pts.length
+        const t1 = 1 - (i + 1) / pts.length
+ 
+        const w0 = t0 * t0 * 3.5
+        const w1 = t1 * t1 * 3.5
+ 
+        const alpha0 = t0 * t0 * 0.9
+        const alpha1 = t1 * t1 * 0.9
+ 
+        const dx = pts[i + 1].x - pts[i].x
+        const dy = pts[i + 1].y - pts[i].y
+        const len = Math.sqrt(dx * dx + dy * dy) || 1
+        const nx = -dy / len
+        const ny = dx / len
+ 
+        const x0a = pts[i].x + nx * w0
+        const y0a = pts[i].y + ny * w0
+        const x0b = pts[i].x - nx * w0
+        const y0b = pts[i].y - ny * w0
+        const x1a = pts[i + 1].x + nx * w1
+        const y1a = pts[i + 1].y + ny * w1
+        const x1b = pts[i + 1].x - nx * w1
+        const y1b = pts[i + 1].y - ny * w1
+ 
+        const grad = ctx.createLinearGradient(pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y)
+        grad.addColorStop(0, `rgba(255, 255, 255, ${alpha0})`)
+        grad.addColorStop(1, `rgba(180, 160, 255, ${alpha1})`)
  
         ctx.beginPath()
-        ctx.arc(point.x, point.y, size * 3, 0, Math.PI * 2)
+        ctx.moveTo(x0a, y0a)
+        ctx.lineTo(x1a, y1a)
+        ctx.lineTo(x1b, y1b)
+        ctx.lineTo(x0b, y0b)
+        ctx.closePath()
         ctx.fillStyle = grad
         ctx.fill()
+      }
  
-        ctx.beginPath()
-        ctx.arc(point.x, point.y, size * 0.5, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.9})`
-        ctx.fill()
-      })
+      // Brilho na cabeça da cauda
+      const head = pts[0]
+      const glow = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 7)
+      glow.addColorStop(0, 'rgba(255, 255, 255, 0.55)')
+      glow.addColorStop(0.4, 'rgba(196, 181, 253, 0.2)')
+      glow.addColorStop(1, 'rgba(139, 92, 246, 0)')
+      ctx.beginPath()
+      ctx.arc(head.x, head.y, 7, 0, Math.PI * 2)
+      ctx.fillStyle = glow
+      ctx.fill()
  
       rafRef.current = requestAnimationFrame(draw)
     }
@@ -134,7 +166,6 @@ export function Cursor() {
  
   return (
     <>
-      {/* Rastro de cometa via canvas */}
       <CometTrail />
  
       {/* Aura atmosférica */}
