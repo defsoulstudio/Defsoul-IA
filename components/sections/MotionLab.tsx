@@ -7,7 +7,7 @@ import { useState } from 'react'
  
 function ShaderPreview() {
   return (
-    <div className="relative flex h-full items-center justify-center">
+    <div className="relative flex h-full w-full items-center justify-center">
       {[130, 86, 44].map((size, i) => (
         <motion.div
           key={i}
@@ -64,7 +64,7 @@ function AIPreview() {
  
 function MotionPreview() {
   return (
-    <div className="relative flex h-full items-center justify-center overflow-hidden">
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
       <svg className="h-20 w-full" viewBox="0 0 160 60">
         <motion.path
           d="M 10 50 C 50 50, 60 10, 80 30 S 130 10, 150 10"
@@ -83,7 +83,7 @@ function MotionPreview() {
  
 function DepthPreview() {
   return (
-    <div className="relative flex h-full items-center justify-center" style={{ perspective: '400px' }}>
+    <div className="relative flex h-full w-full items-center justify-center" style={{ perspective: '400px' }}>
       {[0, 1, 2].map((i) => (
         <motion.div key={i}
           animate={{ rotateY: [0, 8, 0, -8, 0], rotateX: [0, -4, 0, 4, 0] }}
@@ -143,12 +143,11 @@ export function MotionLab() {
               className="absolute inset-0 rounded-[34px] border border-violet-300/30" />
             <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
  
-            {/* FIX: layout interno usa flex-col com altura mínima, preview com flex-1 para ocupar espaço disponível */}
-            <div className="relative z-10 flex min-h-[260px] flex-col justify-between">
+            <div className="relative z-10 flex flex-col">
               <span className="text-xs tracking-[0.3em] text-white/25">{id}</span>
  
-              {/* FIX: preview com flex-1 e overflow-hidden, evita que o SVG quebre o layout */}
-              <div className="my-3 min-h-0 flex-1 overflow-hidden">
+              {/* Altura fixa no preview — todos os cards têm o mesmo bloco visual */}
+              <div className="my-4 h-[140px] w-full overflow-hidden">
                 <Preview />
               </div>
  
