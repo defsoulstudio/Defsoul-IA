@@ -40,7 +40,8 @@ function AIPreview() {
   const allNodes = layers.flat()
  
   return (
-    <div className="relative h-full w-full">
+    // FIX: w-full + h-full garante que o SVG não extrapole o container do card
+    <div className="relative h-full w-full flex items-center justify-center">
       <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
         {edges.map(({ x1, y1, x2, y2, i }) => (
           <motion.line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
@@ -121,7 +122,8 @@ export function MotionLab() {
         </h2>
       </motion.div>
  
-      <div className="mt-24 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {/* FIX: grid com items-stretch para altura uniforme entre todos os cards */}
+      <div className="mt-24 grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-4">
         {cards.map(({ id, title, description, Preview }, index) => (
           <motion.div
             key={id}
@@ -132,6 +134,7 @@ export function MotionLab() {
             transition={{ duration: 1, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
             viewport={{ once: true }}
             whileHover={{ y: -10, scale: 1.02 }}
+            // FIX: removido h-[260px] fixo do inner div; o card agora usa flex-col com altura consistente via min-h
             className="group relative overflow-hidden rounded-[34px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl"
           >
             <motion.div animate={{ opacity: hovered === index ? 1 : 0 }} transition={{ duration: 0.4 }}
@@ -140,11 +143,15 @@ export function MotionLab() {
               className="absolute inset-0 rounded-[34px] border border-violet-300/30" />
             <div className="absolute inset-0 opacity-[0.03] mix-blend-screen bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
  
-            <div className="relative z-10 flex h-[260px] flex-col justify-between">
+            {/* FIX: layout interno usa flex-col com altura mínima, preview com flex-1 para ocupar espaço disponível */}
+            <div className="relative z-10 flex min-h-[260px] flex-col justify-between">
               <span className="text-xs tracking-[0.3em] text-white/25">{id}</span>
-              <div className="flex-1 py-3">
+ 
+              {/* FIX: preview com flex-1 e overflow-hidden, evita que o SVG quebre o layout */}
+              <div className="my-3 min-h-0 flex-1 overflow-hidden">
                 <Preview />
               </div>
+ 
               <div>
                 <h3 className="text-2xl font-light text-white">{title}</h3>
                 <p className="mt-2 text-[11px] leading-relaxed tracking-wide text-white/35">{description}</p>

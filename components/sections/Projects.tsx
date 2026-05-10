@@ -7,12 +7,10 @@ import { Magnetic } from '@/components/ui/Magnetic'
  
 // ─── Visuais de fundo por módulo ───────────────────────────────────────────────
  
-// Motion Systems: linhas de easing se desenhando
 function MotionSystemsVisual({ active }: { active: boolean }) {
   return (
     <div className="absolute inset-0 flex items-center justify-end pr-10 opacity-40">
       <svg className="h-48 w-48" viewBox="0 0 100 100">
-        {/* trilhas de easing */}
         {[0, 1, 2].map((i) => (
           <motion.path
             key={i}
@@ -26,7 +24,6 @@ function MotionSystemsVisual({ active }: { active: boolean }) {
             transition={{ duration: 1.2, delay: i * 0.2, ease: 'easeOut' }}
           />
         ))}
-        {/* ponto correndo */}
         <motion.circle
           r="2.5" fill="rgba(196,181,253,0.9)"
           animate={{ cx: [10, 90], cy: [70, 30], opacity: active ? [0.6, 1] : 0 }}
@@ -37,7 +34,6 @@ function MotionSystemsVisual({ active }: { active: boolean }) {
   )
 }
  
-// AI Interfaces: rede neural em camadas flutuando
 function AIInterfacesVisual({ active }: { active: boolean }) {
   const layers = [
     [{ x: 20, y: 35 }, { x: 20, y: 65 }],
@@ -72,7 +68,6 @@ function AIInterfacesVisual({ active }: { active: boolean }) {
   )
 }
  
-// Shader Worlds: anéis orbitais com distorção
 function ShaderWorldsVisual({ active }: { active: boolean }) {
   return (
     <div className="absolute inset-0 flex items-center justify-end pr-8 opacity-35">
@@ -97,7 +92,6 @@ function ShaderWorldsVisual({ active }: { active: boolean }) {
   )
 }
  
-// Brand Atmospheres: paleta de identidade visual
 function BrandVisual({ active }: { active: boolean }) {
   const swatches = [
     'rgba(139,92,246,0.7)',
@@ -116,14 +110,13 @@ function BrandVisual({ active }: { active: boolean }) {
             style={{ height: '10px', borderRadius: '6px', background: color, width: '40px' }}
           />
         ))}
-        {/* tipografia simulada */}
         <motion.div
           animate={{ opacity: active ? [0.3, 0.7, 0.3] : 0.25 }}
           transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
           className="mt-2 flex flex-col gap-1"
         >
           <div className="h-1.5 w-16 rounded-full bg-white/20" />
-          <div className="h-1 w-10 rounded-full bg-white/12" />
+          <div className="h-1 w-10 rounded-full bg-white/[0.12]" />
         </motion.div>
       </div>
     </div>
@@ -185,7 +178,8 @@ export function Projects() {
         </h2>
       </motion.div>
  
-      <div className="mt-24 grid gap-6 md:grid-cols-2">
+      {/* FIX: grid com items-stretch para cards com altura igual em cada linha */}
+      <div className="mt-24 grid items-stretch gap-6 md:grid-cols-2">
         {modules.map(({ label, title, description, href, Visual }, index) => {
           const isActive = active === index
  
@@ -198,8 +192,9 @@ export function Projects() {
                 whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 transition={{ duration: 1, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
                 viewport={{ once: true }}
+                // FIX: h-full garante que todos os cards da mesma linha tenham a mesma altura
                 className="
-                  group relative min-h-[340px] overflow-hidden
+                  group relative h-full min-h-[340px] overflow-hidden
                   rounded-[38px] border border-white/10
                   bg-white/[0.025] p-8 backdrop-blur-2xl
                   transition-all duration-700
@@ -223,8 +218,8 @@ export function Projects() {
                 {/* linha topo */}
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
  
-                {/* conteúdo */}
-                <div style={{ transform: 'translateZ(40px)' }} className="relative z-10 flex h-full flex-col justify-between">
+                {/* conteúdo — FIX: flex-col com h-full para preencher todo o card */}
+                <div className="relative z-10 flex h-full flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] tracking-[0.35em] text-violet-200/55">{label}</span>
                     <motion.span
@@ -236,7 +231,8 @@ export function Projects() {
                     </motion.span>
                   </div>
  
-                  <div>
+                  {/* FIX: mt-auto empurra o conteúdo inferior para o fundo, preenchendo o espaço vazio */}
+                  <div className="mt-auto">
                     <Link href={href}>
                       <motion.div whileHover={{ x: 4 }} className="inline-block text-4xl font-light tracking-[-0.04em] text-white">
                         {title}
